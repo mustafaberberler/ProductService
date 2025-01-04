@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: product-postgres
+    environment:
+      POSTGRES_DB: products
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: mypass
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - shared-network
+
+  product-service:
+    build: .
+    container_name: product-service
+    depends_on:
+      - postgres
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://product-postgres:5432/products
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: mypass
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+    ports:
+      - "8084:8082"
+    volumes:
+      - ./logs:/app/logs # Opsiyonel
+    command: ["java", "-jar", "/app/.jar"] # Doğru başlatma komutunu ekleyin
+    networks:
+      - shared-network
+
+volumes:
+  postgres_data:
+
+networks:
+  shared-network:
+    external: true
