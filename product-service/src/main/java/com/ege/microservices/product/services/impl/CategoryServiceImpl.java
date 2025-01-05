@@ -10,7 +10,11 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.common.errors.ResourceNotFoundException;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
 
@@ -23,6 +27,8 @@ public class CategoryServiceImpl implements CategoryService {
     private final CategoryRepository categoryRepository;
 
     private final CategoryDTOConverter categoryDTOConverter;
+
+    private final RestTemplate restTemplate;
 
     @Override
     public CategoryDto createCategory(CategoryRequestDto categoryRequestDto) {
@@ -84,21 +90,31 @@ public class CategoryServiceImpl implements CategoryService {
     @Override
     public CategoryDto getCategoryByName(String categoryName) {
 
-        log.info("Getting category by name.");
+        String url = "http://localhost:8085/api/category/get/name/" + categoryName;
 
-        CategoryEntity categoryEntity = categoryRepository.findCategoryEntityByCategoryName(categoryName);
+        ResponseEntity<CategoryDto> response = restTemplate.exchange(
+                url,
+                HttpMethod.GET,
+                null,
+                new ParameterizedTypeReference<CategoryDto>() {}
+        );
 
-        return categoryDTOConverter.convertCategoryEntityToCategoryDto(categoryEntity);
+        return response.getBody();
 
     }
 
     @Override
     public List<CategoryDto> getAllCategories() {
 
-        log.info("Getting all categories.");
+        String url = "http://localhost:8085/api/category/getAll";
 
-        List<CategoryEntity> categoryEntityList = categoryRepository.findAll();
+        ResponseEntity<List<CategoryDto>> response = restTemplate.exchange(
+                url,
+                HttpMethod.GET,
+                null,
+                new ParameterizedTypeReference<List<CategoryDto>>() {}
+        );
 
-        return categoryDTOConverter.convertCategoryEntityListToCategoryDtoList(categoryEntityList);
+        return response.getBody();
     }
 }
