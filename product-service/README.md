@@ -107,6 +107,9 @@ Example JSON body:
 }
 
 ```
+
+- In order to do GET operations on products, **Search Service** has to be cloned from my repository.
+
 #### Get product by ID
 
 ```http
