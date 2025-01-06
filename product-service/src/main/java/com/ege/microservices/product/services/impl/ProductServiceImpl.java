@@ -118,20 +118,7 @@ public class ProductServiceImpl implements ProductService {
         return response.getBody();
     }
 
-    @Override
-    public List<ProductDto> getAllProducts() {
 
-        String url = "http://localhost:8085/api/product/getAll";
-
-        ResponseEntity<List<ProductDto>> response = restTemplate.exchange(
-                url,
-                HttpMethod.GET,
-                null,
-                new ParameterizedTypeReference<List<ProductDto>>() {}
-        );
-
-        return response.getBody();
-    }
 
     @Override
     public List<ProductDto> getProductsByName(String productName) {
@@ -180,4 +167,36 @@ public class ProductServiceImpl implements ProductService {
         return response.getBody();
 
     }
+
+    @Override
+    public List<ProductDto> getProductsByCategoryName(String categoryName) {
+
+        String url = "http://localhost:8085/api/product/get/category/" + categoryName;
+
+        ResponseEntity<List<ProductDto>> response = restTemplate.exchange(
+                url,
+                HttpMethod.GET,
+                null,
+                new ParameterizedTypeReference<List<ProductDto>>() {}
+        );
+
+        return response.getBody();
+
+    }
+
+    @Override
+    public List<ProductDto> getAllProducts() {
+
+        String url = "http://localhost:8085/api/product/getAll";
+
+        ResponseEntity<List<ProductDto>> response = restTemplate.exchange(
+                url,
+                HttpMethod.GET,
+                null,
+                new ParameterizedTypeReference<List<ProductDto>>() {}
+        );
+
+        return response.getBody();
+    }
+
 }

@@ -10,6 +10,7 @@ public final class ProductRestPath {
     public static final String GET_BY_DESCRIPTION_PATH = "/get/description";
     public static final String GET_BY_NAME_PATH = "/get/name";
     public static final String GET_BY_PRICE_PATH = "/get/price";
+    public static final String GET_BY_CATEGORY_NAME = "/get/category";
     public static final String GET_ALL_PATH = "/getAll";
 
     private ProductRestPath(){

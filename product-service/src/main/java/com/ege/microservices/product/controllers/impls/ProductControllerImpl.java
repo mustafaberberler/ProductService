@@ -103,6 +103,17 @@ public class ProductControllerImpl implements ProductController {
     }
 
     @Override
+    public ResponseEntity<List<ProductModel>> getProductByCategoryName(String categoryName) {
+
+        List<ProductDto> productDtoList = productService.getProductsByCategoryName(categoryName);
+
+        List<ProductModel> productModelList = productModelConverter.convertProductDtoListToProductModelList(productDtoList);
+
+        return new ResponseEntity<>(productModelList, HttpStatus.OK);
+
+    }
+
+    @Override
     public ResponseEntity<List<ProductModel>> getAllProducts() {
 
         List<ProductDto> productDtoList = productService.getAllProducts();
