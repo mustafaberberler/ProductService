@@ -97,7 +97,7 @@ Make sure that category that you want to insert the product exists. If not, inse
 Example JSON body:
 
 {
-    "productName": Updated Product",
+    "productName": "Updated Product",
     "description": "Updated Description",
     "quantity": 100,
     "price": 3999.99,
