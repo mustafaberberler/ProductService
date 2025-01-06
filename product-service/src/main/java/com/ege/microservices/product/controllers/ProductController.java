@@ -34,6 +34,9 @@ public interface ProductController {
     @GetMapping(value = ProductRestPath.GET_BY_PRICE_PATH, produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<List<ProductModel>> getProductsByPrice(@RequestParam BigDecimal minPrice, @RequestParam BigDecimal maxPrice);
 
+    @GetMapping(value = ProductRestPath.GET_BY_CATEGORY_NAME + "/{categoryName}", produces = MediaType.APPLICATION_JSON_VALUE)
+    ResponseEntity<List<ProductModel>> getProductByCategoryName(@PathVariable String categoryName);
+
     @GetMapping(value = ProductRestPath.GET_ALL_PATH, produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<List<ProductModel>> getAllProducts();
 
