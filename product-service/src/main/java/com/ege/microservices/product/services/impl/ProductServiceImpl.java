@@ -5,9 +5,11 @@ import com.ege.microservices.product.entities.CategoryEntity;
 import com.ege.microservices.product.entities.ProductEntity;
 import com.ege.microservices.product.repositories.CategoryRepository;
 import com.ege.microservices.product.repositories.ProductRepository;
+import com.ege.microservices.product.services.LogService;
 import com.ege.microservices.product.services.ProductService;
 import com.ege.microservices.product.services.dtos.ProductDto;
 import com.ege.microservices.product.services.dtos.ProductRequestDto;
+import com.ege.microservices.product.services.dtos.rabbitdtos.ProductRabbitDTO;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -36,26 +38,55 @@ public class ProductServiceImpl implements ProductService {
 
     private final RestTemplate restTemplate;
 
+    private final LogService logService;
+
     @Override
     public ProductDto createProduct(ProductRequestDto productRequestDto) {
 
         CategoryEntity categoryEntity = categoryRepository.findCategoryEntityByCategoryName(productRequestDto.getCategory().getCategoryName());
 
-        if (categoryEntity == null){
+        if (categoryEntity == null) {
+
             log.info("Related category with this product not found in createProduct() method: {}", productRequestDto.getCategory().getCategoryName());
             throw new ResourceNotFoundException("Related category with this product not found: " + productRequestDto.getCategory().getCategoryName());
+
+        }
+
+        ProductEntity existingProduct = productRepository.findByProductName(productRequestDto.getProductName());
+
+        // If there is already a product with the same name, instead of creating a new row with the same name, just increase the quantity of this product
+        if (existingProduct != null) {
+
+            log.info("Product already exists with name {}. Increasing quantity by {}", productRequestDto.getProductName(), productRequestDto.getQuantity());
+
+            existingProduct.setQuantity(existingProduct.getQuantity() + productRequestDto.getQuantity());
+
+            existingProduct.setUpdatedAt(LocalDateTime.now());
+
+            ProductEntity updatedProduct = productRepository.save(existingProduct);
+
+            log.info("Updated product quantity. New quantity: {}", updatedProduct.getQuantity());
+
+            return productDTOConverter.convertProductEntityToProductDto(updatedProduct);
+
         }
 
         log.info("Creating product: {}", productRequestDto.getProductName());
+
         ProductEntity productEntity = productDTOConverter.convertProductRequestDtoToProductEntity(productRequestDto);
 
         productEntity.setCategory(categoryEntity);
 
         productEntity.setCreatedAt(LocalDateTime.now());
 
+        productEntity.setUpdatedAt(LocalDateTime.now());
+
         ProductEntity savedProduct = productRepository.save(productEntity);
 
         log.info("Product created with ID: {}", savedProduct.getProductId());
+
+        // for Logging Service
+        logService.sendLog("INFO", "Creating product with ID: " + savedProduct.getProductId(), "Product Service");
 
         return productDTOConverter.convertProductEntityToProductDto(savedProduct);
     }
@@ -67,10 +98,12 @@ public class ProductServiceImpl implements ProductService {
 
         ProductEntity productEntity = productRepository.findById(productId).orElseThrow(() -> new ResourceNotFoundException("Product not found: " + productId));
 
-
         productRepository.delete(productEntity);
 
         log.info("Product with ID {} deleted.", productId);
+
+        // for Logging Service
+        logService.sendLog("INFO", "Deleting product with ID: " + productId, "Product Service");
 
         return "Product with productId: " + productId + " has been deleted successfully.";
     }
@@ -80,7 +113,7 @@ public class ProductServiceImpl implements ProductService {
 
         CategoryEntity categoryEntity = categoryRepository.findCategoryEntityByCategoryName(productRequestDto.getCategory().getCategoryName());
 
-        if (categoryEntity == null){
+        if (categoryEntity == null) {
             log.info("Related category with this product not found in updateProduct() method: {}", productRequestDto.getCategory().getCategoryName());
             throw new ResourceNotFoundException("Related category '{}' with this product not found." + productRequestDto.getCategory().getCategoryName());
         }
@@ -100,7 +133,51 @@ public class ProductServiceImpl implements ProductService {
 
         log.info("Product with ID {} updated.", productId);
 
+        // for Logging Service
+        logService.sendLog("INFO", "Updating product with ID: " + updatedProduct.getProductId(), "Product Service");
+
         return productDTOConverter.convertProductEntityToProductDto(updatedProduct);
+    }
+
+
+    @Override
+    @Transactional
+    public void decreaseStock(List<ProductRabbitDTO> products) {
+
+        for (ProductRabbitDTO product : products){
+            ProductEntity dbProduct = productRepository.findById(product.getProductId()).orElseThrow(() -> new ResourceNotFoundException("Product not found: " + product.getProductId()));
+
+            if (dbProduct.getQuantity() < product.getQuantity()){
+                throw new RuntimeException("Insufficient stock for product ID: " + product.getProductId());
+            }
+
+            dbProduct.setQuantity(dbProduct.getQuantity() - product.getQuantity());
+            dbProduct.setUpdatedAt(LocalDateTime.now());
+            productRepository.save(dbProduct);
+            log.info("Decreased stock for product ID: {}", product.getProductId());
+
+            // for Logging Service
+            logService.sendLog("INFO", "Decreasing stock of product with ID: " + dbProduct.getProductId() + "by " + product.getQuantity(), "Product Service");
+
+        }
+    }
+
+    @Override
+    public void increaseStock(List<ProductRabbitDTO> products) {
+
+        for (ProductRabbitDTO product : products){
+            ProductEntity dbProduct = productRepository.findById(product.getProductId()).orElseThrow(() -> new ResourceNotFoundException("Product not found: " + product.getProductId()));
+
+            dbProduct.setQuantity(dbProduct.getQuantity() + product.getQuantity());
+            dbProduct.setUpdatedAt(LocalDateTime.now());
+            productRepository.save(dbProduct);
+            log.info("Increased stock for product ID: {}", product.getProductId());
+
+            // for Logging Service
+            logService.sendLog("INFO", "Increasing stock of product with ID: " + dbProduct.getProductId() + "by " + product.getQuantity(), "Product Service");
+
+        }
+
     }
 
     @Override
@@ -112,13 +189,12 @@ public class ProductServiceImpl implements ProductService {
                 url,
                 HttpMethod.GET,
                 null,
-                new ParameterizedTypeReference<ProductDto>() {}
+                new ParameterizedTypeReference<ProductDto>() {
+                }
         );
 
         return response.getBody();
     }
-
-
 
     @Override
     public List<ProductDto> getProductsByName(String productName) {
@@ -129,7 +205,8 @@ public class ProductServiceImpl implements ProductService {
                 url,
                 HttpMethod.GET,
                 null,
-                new ParameterizedTypeReference<List<ProductDto>>() {}
+                new ParameterizedTypeReference<List<ProductDto>>() {
+                }
         );
 
         return response.getBody();
@@ -145,7 +222,8 @@ public class ProductServiceImpl implements ProductService {
                 url,
                 HttpMethod.GET,
                 null,
-                new ParameterizedTypeReference<List<ProductDto>>() {}
+                new ParameterizedTypeReference<List<ProductDto>>() {
+                }
         );
 
         return response.getBody();
@@ -161,7 +239,8 @@ public class ProductServiceImpl implements ProductService {
                 url,
                 HttpMethod.GET,
                 null,
-                new ParameterizedTypeReference<List<ProductDto>>() {}
+                new ParameterizedTypeReference<List<ProductDto>>() {
+                }
         );
 
         return response.getBody();
@@ -177,7 +256,8 @@ public class ProductServiceImpl implements ProductService {
                 url,
                 HttpMethod.GET,
                 null,
-                new ParameterizedTypeReference<List<ProductDto>>() {}
+                new ParameterizedTypeReference<List<ProductDto>>() {
+                }
         );
 
         return response.getBody();
@@ -193,7 +273,8 @@ public class ProductServiceImpl implements ProductService {
                 url,
                 HttpMethod.GET,
                 null,
-                new ParameterizedTypeReference<List<ProductDto>>() {}
+                new ParameterizedTypeReference<List<ProductDto>>() {
+                }
         );
 
         return response.getBody();
