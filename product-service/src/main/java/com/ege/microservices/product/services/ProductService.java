@@ -2,6 +2,7 @@ package com.ege.microservices.product.services;
 
 import com.ege.microservices.product.services.dtos.ProductDto;
 import com.ege.microservices.product.services.dtos.ProductRequestDto;
+import com.ege.microservices.product.services.dtos.rabbitdtos.ProductRabbitDTO;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -35,5 +36,8 @@ public interface ProductService {
     // Find all products
     List<ProductDto> getAllProducts();
 
+    void decreaseStock(List<ProductRabbitDTO> products);
+
+    void increaseStock(List<ProductRabbitDTO> products);
 
 }
