@@ -10,6 +10,8 @@ import com.ege.microservices.product.services.ProductService;
 import com.ege.microservices.product.services.dtos.ProductDto;
 import com.ege.microservices.product.services.dtos.ProductRequestDto;
 import com.ege.microservices.product.services.dtos.rabbitdtos.ProductRabbitDTO;
+import com.ege.microservices.product.utils.rabbitutils.RabbitMQClient;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -40,6 +42,11 @@ public class ProductServiceImpl implements ProductService {
 
     private final LogService logService;
 
+    /// 03.02.2025
+    private final ObjectMapper objectMapper;
+    private static final String LOG_QUEUE = "log_service_queue";
+    private final RabbitMQClient rabbitMQClient;
+
     @Override
     public ProductDto createProduct(ProductRequestDto productRequestDto) {
 
@@ -67,6 +74,9 @@ public class ProductServiceImpl implements ProductService {
 
             log.info("Updated product quantity. New quantity: {}", updatedProduct.getQuantity());
 
+            /// 03.02.2025
+            logToService("INFO", "Product already exists. Updated product quantity. New quantity: " + updatedProduct.getQuantity());
+
             return productDTOConverter.convertProductEntityToProductDto(updatedProduct);
 
         }
@@ -86,7 +96,10 @@ public class ProductServiceImpl implements ProductService {
         log.info("Product created with ID: {}", savedProduct.getProductId());
 
         // for Logging Service
-        logService.sendLog("INFO", "Creating product with ID: " + savedProduct.getProductId(), "Product Service");
+      //  logService.sendLog("INFO", "Creating product with ID: " + savedProduct.getProductId(), "Product Service");
+
+        /// 03.02.2025
+        logToService("INFO", "Creating product with ID: " + savedProduct.getProductId());
 
         return productDTOConverter.convertProductEntityToProductDto(savedProduct);
     }
@@ -103,7 +116,10 @@ public class ProductServiceImpl implements ProductService {
         log.info("Product with ID {} deleted.", productId);
 
         // for Logging Service
-        logService.sendLog("INFO", "Deleting product with ID: " + productId, "Product Service");
+       // logService.sendLog("INFO", "Deleting product with ID: " + productId, "Product Service");
+
+        /// 03.02.2025
+        logToService("INFO", "Deleting product with ID: " + productId);
 
         return "Product with productId: " + productId + " has been deleted successfully.";
     }
@@ -134,7 +150,10 @@ public class ProductServiceImpl implements ProductService {
         log.info("Product with ID {} updated.", productId);
 
         // for Logging Service
-        logService.sendLog("INFO", "Updating product with ID: " + updatedProduct.getProductId(), "Product Service");
+       // logService.sendLog("INFO", "Updating product with ID: " + updatedProduct.getProductId(), "Product Service");
+
+        /// 03.02.2025
+        logToService("INFO", "Updating product with ID: " + updatedProduct.getProductId());
 
         return productDTOConverter.convertProductEntityToProductDto(updatedProduct);
     }
@@ -157,7 +176,11 @@ public class ProductServiceImpl implements ProductService {
             log.info("Decreased stock for product ID: {}", product.getProductId());
 
             // for Logging Service
-            logService.sendLog("INFO", "Decreasing stock of product with ID: " + dbProduct.getProductId() + "by " + product.getQuantity(), "Product Service");
+           // logService.sendLog("INFO", "Decreasing stock of product with ID: " + dbProduct.getProductId() + "by " + product.getQuantity(), "Product Service");
+
+            /// 03.02.2025
+            logToService("INFO", "Decreasing stock of product with ID: " + dbProduct.getProductId() + "by " + product.getQuantity());
+
 
         }
     }
@@ -174,7 +197,10 @@ public class ProductServiceImpl implements ProductService {
             log.info("Increased stock for product ID: {}", product.getProductId());
 
             // for Logging Service
-            logService.sendLog("INFO", "Increasing stock of product with ID: " + dbProduct.getProductId() + "by " + product.getQuantity(), "Product Service");
+           // logService.sendLog("INFO", "Increasing stock of product with ID: " + dbProduct.getProductId() + "by " + product.getQuantity(), "Product Service");
+
+            /// 03.02.2025
+            logToService("INFO", "Increasing stock of product with ID: " + dbProduct.getProductId() + "by " + product.getQuantity());
 
         }
 
@@ -279,5 +305,39 @@ public class ProductServiceImpl implements ProductService {
 
         return response.getBody();
     }
+
+
+
+    ///  03.02.2025
+    private void logToService(String level, String message) {
+        try {
+            String logPayload = objectMapper.writeValueAsString(new LogRequest("product-service", level, message));
+            rabbitMQClient.sendAndReceive(LOG_QUEUE, logPayload);
+        } catch (Exception e) {
+            System.err.println("Failed to send log to RabbitMQ: " + message);
+        }
+    }
+
+    /// 03.02.2025
+    private static class LogRequest {
+        private String service;
+        private Content content;
+
+        public LogRequest(String service, String level, String message) {
+            this.service = service;
+            this.content = new Content(level, message);
+        }
+
+        private static class Content {
+            private String level;
+            private String message;
+
+            public Content(String level, String message) {
+                this.level = level;
+                this.message = message;
+            }
+        }
+    }
+
 
 }

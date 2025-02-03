@@ -10,6 +10,8 @@ services:
     environment:
       RABBITMQ_DEFAULT_USER: guest
       RABBITMQ_DEFAULT_PASS: guest
+    networks:
+      - shared-network
   postgres:
     image: postgres:15
     container_name: product-postgres
@@ -29,11 +31,18 @@ services:
     container_name: product-service
     depends_on:
       - postgres
+      - rabbitmq
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://product-postgres:5432/products
+   #   SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/products
+  #    SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/products
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: mypass
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+      SPRING_RABBITMQ_USERNAME: guest
+      SPRING_RABBITMQ_PASSWORD: guest
     ports:
       - "8084:8082"
     volumes:
