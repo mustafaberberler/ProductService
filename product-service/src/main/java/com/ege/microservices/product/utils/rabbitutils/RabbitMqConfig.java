@@ -107,7 +107,9 @@ public class RabbitMqConfig {
 
     /// 03.02.2025
 
-    private static final String logQueueName = "log_service_queue";
+    public static final String logQueueName = "log_service_queue";
+
+    public static final String productQueueName = "product_service_queue";
 
     @Bean
     public RabbitTemplate rabbitTemplate(ConnectionFactory connectionFactory) {
@@ -127,8 +129,13 @@ public class RabbitMqConfig {
     }
 
     @Bean
-    Queue logQueue() {
+    public Queue logQueue() {
         return new Queue(logQueueName, true); // durable=true
+    }
+
+    @Bean
+    public Queue productQueue(){
+        return new Queue(productQueueName, true);
     }
 
 

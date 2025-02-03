@@ -209,7 +209,7 @@ public class ProductServiceImpl implements ProductService {
     @Override
     public ProductDto getProductById(String productId) {
 
-        String url = "http://localhost:8085/api/product/get/id/" + productId;
+        String url = "http://product-search:8085/api/product/get/id/" + productId;
 
         ResponseEntity<ProductDto> response = restTemplate.exchange(
                 url,
@@ -225,7 +225,7 @@ public class ProductServiceImpl implements ProductService {
     @Override
     public List<ProductDto> getProductsByName(String productName) {
 
-        String url = "http://localhost:8085/api/product/get/name/" + productName;
+        String url = "http://product-search:8085/api/product/get/name/" + productName;
 
         ResponseEntity<List<ProductDto>> response = restTemplate.exchange(
                 url,
@@ -242,7 +242,7 @@ public class ProductServiceImpl implements ProductService {
     @Override
     public List<ProductDto> getProductsByDescription(String description) {
 
-        String url = "http://localhost:8085/api/product/get/description/" + description;
+        String url = "http://product-search:8085/api/product/get/description/" + description;
 
         ResponseEntity<List<ProductDto>> response = restTemplate.exchange(
                 url,
@@ -259,7 +259,7 @@ public class ProductServiceImpl implements ProductService {
     @Override
     public List<ProductDto> getProductsByPrice(BigDecimal minPrice, BigDecimal maxPrice) {
 
-        String url = "http://localhost:8085/api/product/get/price?minPrice=" + minPrice + "&maxPrice=" + maxPrice;
+        String url = "http://product-search:8085/api/product/get/price?minPrice=" + minPrice + "&maxPrice=" + maxPrice;
 
         ResponseEntity<List<ProductDto>> response = restTemplate.exchange(
                 url,
@@ -276,7 +276,7 @@ public class ProductServiceImpl implements ProductService {
     @Override
     public List<ProductDto> getProductsByCategoryName(String categoryName) {
 
-        String url = "http://localhost:8085/api/product/get/category/" + categoryName;
+        String url = "http://product-search:8085/api/product/get/category/" + categoryName;
 
         ResponseEntity<List<ProductDto>> response = restTemplate.exchange(
                 url,
@@ -293,7 +293,7 @@ public class ProductServiceImpl implements ProductService {
     @Override
     public List<ProductDto> getAllProducts() {
 
-        String url = "http://localhost:8085/api/product/getAll";
+        String url = "http://product-search:8085/api/product/getAll";
 
         ResponseEntity<List<ProductDto>> response = restTemplate.exchange(
                 url,
